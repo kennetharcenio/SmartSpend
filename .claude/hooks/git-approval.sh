@@ -3,11 +3,18 @@
 COMMAND=$(jq -r '.tool_input.command')
 
 if echo "$COMMAND" | grep -q 'git.*commit'; then
-  jq -n '{
+  # Extract commit message from -m flag (handles both 'msg' and "msg" formats)
+  MESSAGE=$(echo "$COMMAND" | grep -oP '(?<=-m\s)["\x27]([^"\x27]*)["\x27]' | tr -d '"\x27' | head -1)
+
+  if [ -z "$MESSAGE" ]; then
+    MESSAGE="(no message extracted)"
+  fi
+
+  jq -n --arg msg "$MESSAGE" '{
     "hookSpecificOutput": {
       "hookEventName": "PreToolUse",
       "permissionDecision": "ask",
-      "permissionDecisionReason": "Review this git commit before proceeding"
+      "permissionDecisionReason": ("Commit: " + $msg)
     }
   }'
   exit 0
