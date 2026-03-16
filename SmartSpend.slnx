@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="SmartSpend.API/SmartSpend.API.csproj" />
+  <Project Path="SmartSpend.Core/SmartSpend.Core.csproj" />
+  <Project Path="SmartSpend.Infrastructure/SmartSpend.Infrastructure.csproj" />
+</Solution>
