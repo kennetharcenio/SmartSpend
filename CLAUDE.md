@@ -43,6 +43,8 @@ This is a .NET 10.0 Web API following Clean Architecture with three projects:
 
 - `Microsoft.AspNetCore.OpenApi` - OpenAPI documentation
 - `Microsoft.EntityFrameworkCore.SqlServer` - SQL Server database access
+- `Microsoft.AspNetCore.Authentication.JwtBearer` - JWT authentication
+- `BCrypt.Net-Next` - Password hashing
 
 ## Git Commits
 
@@ -90,15 +92,15 @@ SmartSpend/
 - [x] AppDbContext in SmartSpend.Infrastructure/Data with entity configurations
 - [x] Connection string + Program.cs DI setup
 - [x] AddEntityModels migration + applied to SQL Server
-- [ ] CURRENT: Auth endpoints (register/login + JWT)
-- [ ] Expense CRUD endpoints
+- [x] Auth endpoints (register/login + JWT)
+- [ ] CURRENT: Expense CRUD endpoints
 - [ ] Angular scaffold (Sprint 2)
 - [ ] AI features: expense parsing, monthly insights, chat sidebar (Sprint 3)
 
 ## Next task
-Implement JWT authentication:
-1. Add auth packages (Microsoft.AspNetCore.Authentication.JwtBearer, BCrypt.Net-Next)
-2. Create AuthController with Register and Login endpoints
-3. Create DTOs (RegisterRequest, LoginRequest, AuthResponse)
-4. Create AuthService in Infrastructure
-5. Configure JWT in Program.cs
+Implement Expense CRUD endpoints:
+1. Create ExpenseController with CRUD operations
+2. Create DTOs (CreateExpenseRequest, UpdateExpenseRequest, ExpenseResponse)
+3. Create IExpenseService interface in Core
+4. Create ExpenseService in Infrastructure
+5. Add [Authorize] attribute to protect endpoints

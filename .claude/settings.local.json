@@ -28,7 +28,10 @@
       "Bash(git -C \"C:\\\\Users\\\\Kenneth\\\\Documents\\\\Projects\\\\SmartSpend\" push)",
       "Bash(git -C \"C:\\\\Users\\\\Kenneth\\\\Documents\\\\Projects\\\\SmartSpend\" add .claude/settings.local.json)",
       "Bash(git -C \"C:\\\\Users\\\\Kenneth\\\\Documents\\\\Projects\\\\SmartSpend\" commit --amend --no-edit)",
-      "Bash(git -C \"C:\\\\Users\\\\Kenneth\\\\Documents\\\\Projects\\\\SmartSpend\" push --force)"
+      "Bash(git -C \"C:\\\\Users\\\\Kenneth\\\\Documents\\\\Projects\\\\SmartSpend\" push --force)",
+      "Bash(git -C \"C:\\\\Users\\\\Kenneth\\\\Documents\\\\Projects\\\\SmartSpend\" add .claude/hooks/git-approval.sh)",
+      "Bash(git -C \"C:\\\\Users\\\\Kenneth\\\\Documents\\\\Projects\\\\SmartSpend\" commit -m \"Enhance git hook to show commit message in approval\")",
+      "Bash(git -C \"C:\\\\Users\\\\Kenneth\\\\Documents\\\\Projects\\\\SmartSpend\" commit -m \"Add JWT authentication with register and login endpoints\")"
     ]
   }
 }
