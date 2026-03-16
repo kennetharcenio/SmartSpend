@@ -1,6 +1,8 @@
 {
   "permissions": {
     "allow": [
+      "Edit",
+      "Write",
       "Bash(cat:*)",
       "Bash(git init:*)",
       "Bash(git -C \"C:\\\\Users\\\\Kenneth\\\\Documents\\\\Projects\\\\SmartSpend\" status)",
@@ -18,13 +20,15 @@
       "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" api -H \"Accept: application/vnd.github.raw\" /repos/github/gitignore/contents/VisualStudio.gitignore)",
       "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" api -H \"Accept: application/vnd.github.raw\" repos/github/gitignore/contents/VisualStudio.gitignore)",
       "Bash(git -C \"C:\\\\Users\\\\Kenneth\\\\Documents\\\\Projects\\\\SmartSpend\" add -A)",
-      "Bash(git -C \"C:\\\\Users\\\\Kenneth\\\\Documents\\\\Projects\\\\SmartSpend\" commit -m \"Initial commit\")",
       "Bash(dotnet tool install:*)",
       "Bash(dotnet ef migrations add:*)",
       "Bash(dotnet build:*)",
       "Bash(dotnet add:*)",
       "Bash(dotnet ef database update:*)",
-      "Bash(git -C \"C:\\\\Users\\\\Kenneth\\\\Documents\\\\Projects\\\\SmartSpend\" commit -m \"Add EF Core setup with AppDbContext and InitialCreate migration\")"
+      "Bash(git -C \"C:\\\\Users\\\\Kenneth\\\\Documents\\\\Projects\\\\SmartSpend\" push)",
+      "Bash(git -C \"C:\\\\Users\\\\Kenneth\\\\Documents\\\\Projects\\\\SmartSpend\" add .claude/settings.local.json)",
+      "Bash(git -C \"C:\\\\Users\\\\Kenneth\\\\Documents\\\\Projects\\\\SmartSpend\" commit --amend --no-edit)",
+      "Bash(git -C \"C:\\\\Users\\\\Kenneth\\\\Documents\\\\Projects\\\\SmartSpend\" push --force)"
     ]
   }
 }

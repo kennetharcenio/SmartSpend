@@ -47,3 +47,58 @@ This is a .NET 10.0 Web API following Clean Architecture with three projects:
 ## Git Commits
 
 Do not include AI attribution, co-author lines, or any AI-related footers in commit messages.
+
+---------------------------------------------------------------------------------------------------------------------------------------
+---
+
+# SmartSpend — AI Expense Tracker
+
+## Tech stack
+- Backend: .NET 8 Web API
+- Database: SQL Server (SSMS + EF Core migrations)
+- Frontend: Angular 17
+- AI: OpenAI GPT-4o via .NET SDK + Semantic Kernel
+- Auth: JWT bearer tokens
+- Testing: xUnit + Playwright
+
+## Solution structure
+```
+SmartSpend/
+├── SmartSpend.sln
+├── SmartSpend.API/            ← entry point, controllers, Program.cs
+├── SmartSpend.Core/           ← entity models, interfaces, DTOs
+├── SmartSpend.Infrastructure/ ← AppDbContext, EF migrations, services
+└── smartspend-ui/             ← Angular 17 (Sprint 2)
+```
+
+## Database tables
+- Users (Id, Email, PasswordHash, FullName, CreatedAt, UpdatedAt)
+- Categories (Id, Name, Icon, IsDefault, UserId nullable)
+- Expenses (Id, UserId, CategoryId, Amount, Description, Merchant, ExpenseDate, IsAIParsed, RawInput, CreatedAt, UpdatedAt)
+- AIInsights (Id, UserId, MonthYear char(7), InsightText, GeneratedAt, ExpiresAt)
+
+## Conventions
+- All DB queries scoped by UserId — never leak another user's data
+- Use DTOs for all API requests/responses — never expose entities directly
+- All dates in UTC
+- Async/await throughout
+
+## Current progress
+- [x] SQL schema scripts written
+- [x] Solution scaffolded (API + Core + Infrastructure)
+- [x] EF Core models in SmartSpend.Core/Models (User, Category, Expense, AIInsight)
+- [x] AppDbContext in SmartSpend.Infrastructure/Data with entity configurations
+- [x] Connection string + Program.cs DI setup
+- [x] AddEntityModels migration + applied to SQL Server
+- [ ] CURRENT: Auth endpoints (register/login + JWT)
+- [ ] Expense CRUD endpoints
+- [ ] Angular scaffold (Sprint 2)
+- [ ] AI features: expense parsing, monthly insights, chat sidebar (Sprint 3)
+
+## Next task
+Implement JWT authentication:
+1. Add auth packages (Microsoft.AspNetCore.Authentication.JwtBearer, BCrypt.Net-Next)
+2. Create AuthController with Register and Login endpoints
+3. Create DTOs (RegisterRequest, LoginRequest, AuthResponse)
+4. Create AuthService in Infrastructure
+5. Configure JWT in Program.cs
