@@ -37,3 +37,19 @@ You are the Data/Services Agent for SmartSpend. Your focus is on the Infrastruct
 - Return entities directly (map to DTOs in controller or use AutoMapper)
 - Use raw SQL unless absolutely necessary
 - Skip user scoping on queries
+
+## Worktree Workflow
+
+This agent runs in: `SmartSpend-services/` on branch `services-agent`
+
+```bash
+# Start this agent
+cd C:\Users\Kenneth\Documents\Projects\SmartSpend-services
+claude
+
+# Push your work
+git push origin services-agent
+
+# Create PR when ready
+gh pr create --base master --head services-agent
+```

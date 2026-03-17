@@ -62,3 +62,19 @@ dotnet test --collect:"XPlat Code Coverage"
 - Use real external services (mock them)
 - Write tests that depend on test order
 - Skip error/edge case testing
+
+## Worktree Workflow
+
+This agent runs in: `SmartSpend-qa/` on branch `qa-agent`
+
+```bash
+# Start this agent
+cd C:\Users\Kenneth\Documents\Projects\SmartSpend-qa
+claude
+
+# Push your work
+git push origin qa-agent
+
+# Create PR when ready
+gh pr create --base master --head qa-agent
+```

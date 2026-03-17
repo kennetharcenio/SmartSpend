@@ -69,6 +69,65 @@ gh project item-list 2 --owner kennetharcenio
 gh project item-add 2 --owner kennetharcenio --url <issue-url>
 ```
 
+## Git Worktrees (Parallel Agent Development)
+
+Each agent has its own worktree and branch for parallel development:
+
+| Agent | Directory | Branch |
+|-------|-----------|--------|
+| Main | `SmartSpend/` | `master` |
+| Backend | `SmartSpend-backend/` | `backend-agent` |
+| QA | `SmartSpend-qa/` | `qa-agent` |
+| Domain | `SmartSpend-domain/` | `domain-agent` |
+| Services | `SmartSpend-services/` | `services-agent` |
+
+### Running Agents in Parallel
+
+Open separate terminals for each agent:
+
+```bash
+# Terminal 1 - Backend Agent
+cd C:\Users\Kenneth\Documents\Projects\SmartSpend-backend
+claude
+
+# Terminal 2 - QA Agent
+cd C:\Users\Kenneth\Documents\Projects\SmartSpend-qa
+claude
+
+# Terminal 3 - Services Agent
+cd C:\Users\Kenneth\Documents\Projects\SmartSpend-services
+claude
+```
+
+### Merging Agent Work
+
+```bash
+# From main SmartSpend directory
+cd C:\Users\Kenneth\Documents\Projects\SmartSpend
+
+# Merge agent branches into master
+git merge backend-agent
+git merge qa-agent
+git merge domain-agent
+git merge services-agent
+
+# Or create PRs for review
+gh pr create --base master --head backend-agent --title "Backend agent work"
+```
+
+### Worktree Commands
+
+```bash
+# List all worktrees
+git worktree list
+
+# Remove a worktree
+git worktree remove ../SmartSpend-backend
+
+# Add new worktree
+git worktree add ../SmartSpend-frontend frontend-agent
+```
+
 ---------------------------------------------------------------------------------------------------------------------------------------
 ---
 

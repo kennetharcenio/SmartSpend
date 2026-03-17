@@ -57,7 +57,17 @@
       "Bash(done)",
       "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" project item-list 2 --owner kennetharcenio --format json)",
       "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" project item-list 2 --owner kennetharcenio)",
-      "Bash(git -C \"C:\\\\Users\\\\Kenneth\\\\Documents\\\\Projects\\\\SmartSpend\" commit -m \"Add GitHub Project kanban board integration\")"
+      "Bash(git -C \"C:\\\\Users\\\\Kenneth\\\\Documents\\\\Projects\\\\SmartSpend\" commit -m \"Add GitHub Project kanban board integration\")",
+      "Bash(git -C \"C:\\\\Users\\\\Kenneth\\\\Documents\\\\Projects\\\\SmartSpend\" log -3 --oneline)",
+      "Bash(git -C \"C:\\\\Users\\\\Kenneth\\\\Documents\\\\Projects\\\\SmartSpend\" add README.md docs/)",
+      "Bash(git -C \"C:\\\\Users\\\\Kenneth\\\\Documents\\\\Projects\\\\SmartSpend\" commit -m \"$\\(cat <<''EOF''\nAdd README with architecture diagram and project documentation\nEOF\n\\)\")",
+      "Bash(git -C \"C:\\\\Users\\\\Kenneth\\\\Documents\\\\Projects\\\\SmartSpend\" branch)",
+      "Bash(git branch:*)",
+      "Bash(git -C \"C:\\\\Users\\\\Kenneth\\\\Documents\\\\Projects\\\\SmartSpend\" push -u origin backend-agent qa-agent domain-agent services-agent)",
+      "Bash(git worktree:*)",
+      "Bash(git -C \"C:\\\\Users\\\\Kenneth\\\\Documents\\\\Projects\\\\SmartSpend\" worktree list)",
+      "Bash(git -C \"C:\\\\Users\\\\Kenneth\\\\Documents\\\\Projects\\\\SmartSpend\" diff .claude/settings.local.json)",
+      "Bash(git -C \"C:\\\\Users\\\\Kenneth\\\\Documents\\\\Projects\\\\SmartSpend\" commit -m \"$\\(cat <<''EOF''\nAdd git worktree setup for parallel agent development\nEOF\n\\)\")"
     ]
   }
 }

@@ -37,3 +37,19 @@ You are the Domain Agent for SmartSpend. Your focus is on the Core layer contain
 - Reference other projects (Core is the innermost layer)
 - Put implementation logic here (only interfaces)
 - Include database-specific attributes
+
+## Worktree Workflow
+
+This agent runs in: `SmartSpend-domain/` on branch `domain-agent`
+
+```bash
+# Start this agent
+cd C:\Users\Kenneth\Documents\Projects\SmartSpend-domain
+claude
+
+# Push your work
+git push origin domain-agent
+
+# Create PR when ready
+gh pr create --base master --head domain-agent
+```

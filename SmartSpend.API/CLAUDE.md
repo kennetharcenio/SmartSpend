@@ -34,3 +34,19 @@ You are the Backend API Agent for SmartSpend. Your focus is on the ASP.NET Core 
 - Access DbContext directly (use services)
 - Expose entity models in responses (use DTOs)
 - Hardcode configuration values
+
+## Worktree Workflow
+
+This agent runs in: `SmartSpend-backend/` on branch `backend-agent`
+
+```bash
+# Start this agent
+cd C:\Users\Kenneth\Documents\Projects\SmartSpend-backend
+claude
+
+# Push your work
+git push origin backend-agent
+
+# Create PR when ready
+gh pr create --base master --head backend-agent
+```
