@@ -50,6 +50,25 @@ This is a .NET 10.0 Web API following Clean Architecture with three projects:
 
 Do not include AI attribution, co-author lines, or any AI-related footers in commit messages.
 
+## Task Board
+
+Project kanban: https://github.com/users/kennetharcenio/projects/2
+
+### Agent Workflow
+1. Check the board for tasks assigned to your role
+2. Move task to "In Progress" when starting
+3. Complete the work following TDD
+4. Move task to "Done" when finished
+
+### gh CLI Commands
+```bash
+# List project items
+gh project item-list 2 --owner kennetharcenio
+
+# Add item to project
+gh project item-add 2 --owner kennetharcenio --url <issue-url>
+```
+
 ---------------------------------------------------------------------------------------------------------------------------------------
 ---
 
