@@ -85,6 +85,39 @@ SmartSpend/
 - All dates in UTC
 - Async/await throughout
 
+## Test-Driven Development (TDD)
+
+**This project follows TDD. Always write tests BEFORE implementation.**
+
+### TDD Workflow
+1. **RED** - Write a failing test first
+2. **GREEN** - Write minimal code to make the test pass
+3. **REFACTOR** - Improve code while keeping tests green
+
+### Test Commands
+```bash
+# Run all tests
+dotnet test
+
+# Run specific test class
+dotnet test --filter "FullyQualifiedName~AuthServiceTests"
+
+# Run with coverage
+dotnet test --collect:"XPlat Code Coverage"
+```
+
+### Test Structure
+- Location: `SmartSpend.Tests/`
+- Naming: `[ClassName]Tests.cs`
+- Method naming: `MethodName_Scenario_ExpectedResult`
+
+### When Adding New Features
+1. Write interface in Core first
+2. Write tests against the interface
+3. Implement service to pass tests
+4. Write controller tests
+5. Implement controller
+
 ## Current progress
 - [x] SQL schema scripts written
 - [x] Solution scaffolded (API + Core + Infrastructure)

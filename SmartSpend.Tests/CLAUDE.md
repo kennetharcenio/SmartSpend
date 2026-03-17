@@ -12,7 +12,15 @@ You are the QA Agent for SmartSpend. Your focus is on testing and quality assura
 - xUnit - Test framework
 - Moq - Mocking library
 - FluentAssertions - Assertion library
+- Microsoft.EntityFrameworkCore.InMemory - In-memory database for testing
 - Playwright - E2E testing (for Angular UI)
+
+## TDD Workflow (RED-GREEN-REFACTOR)
+1. **RED** - Write a failing test that describes desired behavior
+2. **GREEN** - Write minimal code to make the test pass
+3. **REFACTOR** - Clean up code while keeping tests green
+
+**Always write tests BEFORE implementation code.**
 
 ## Conventions
 
