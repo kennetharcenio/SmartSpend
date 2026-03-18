@@ -1,4 +1,4 @@
-namespace SmartSpend.Core.DTOs.Expense;
+namespace SmartSpend.Core.DTOs.Expenses;
 
 public class ExpenseResponse
 {
@@ -9,5 +9,7 @@ public class ExpenseResponse
     public string? Description { get; set; }
     public string? Merchant { get; set; }
     public DateTime ExpenseDate { get; set; }
+    public bool IsAIParsed { get; set; }
     public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
 }

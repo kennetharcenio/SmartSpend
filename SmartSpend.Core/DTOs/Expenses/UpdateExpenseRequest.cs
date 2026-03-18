@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace SmartSpend.Core.DTOs.Expense;
+namespace SmartSpend.Core.DTOs.Expenses;
 
-public class CreateExpenseRequest
+public class UpdateExpenseRequest
 {
     [Required]
     public int CategoryId { get; set; }
