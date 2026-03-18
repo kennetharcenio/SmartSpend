@@ -83,6 +83,27 @@ public class ExpenseServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task CreateAsync_ValidRequest_PersistsToDatabase()
+    {
+        // Arrange
+        var request = new CreateExpenseRequest
+        {
+            CategoryId = _categoryId,
+            Amount = 10.00m,
+            ExpenseDate = new DateTime(2026, 3, 18, 0, 0, 0, DateTimeKind.Utc)
+        };
+
+        // Act
+        var result = await _expenseService.CreateAsync(_userId, request);
+
+        // Assert
+        var expense = await _context.Expenses.FindAsync(result.Id);
+        expense.Should().NotBeNull();
+        expense!.UserId.Should().Be(_userId);
+        expense.Amount.Should().Be(10.00m);
+    }
+
+    [Fact]
     public async Task CreateAsync_InvalidCategory_ThrowsException()
     {
         // Arrange
@@ -310,6 +331,32 @@ public class ExpenseServiceTests : IDisposable
 
         // Assert
         result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_InvalidCategory_ThrowsException()
+    {
+        // Arrange
+        var created = await _expenseService.CreateAsync(_userId, new CreateExpenseRequest
+        {
+            CategoryId = _categoryId,
+            Amount = 10m,
+            ExpenseDate = DateTime.UtcNow
+        });
+
+        var updateRequest = new UpdateExpenseRequest
+        {
+            CategoryId = 999,
+            Amount = 10m,
+            ExpenseDate = DateTime.UtcNow
+        };
+
+        // Act
+        var act = async () => await _expenseService.UpdateAsync(_userId, created.Id, updateRequest);
+
+        // Assert
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("Category not found");
     }
 
     #endregion

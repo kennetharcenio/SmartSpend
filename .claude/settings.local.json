@@ -67,7 +67,11 @@
       "Bash(git worktree:*)",
       "Bash(git -C \"C:\\\\Users\\\\Kenneth\\\\Documents\\\\Projects\\\\SmartSpend\" worktree list)",
       "Bash(git -C \"C:\\\\Users\\\\Kenneth\\\\Documents\\\\Projects\\\\SmartSpend\" diff .claude/settings.local.json)",
-      "Bash(git -C \"C:\\\\Users\\\\Kenneth\\\\Documents\\\\Projects\\\\SmartSpend\" commit -m \"$\\(cat <<''EOF''\nAdd git worktree setup for parallel agent development\nEOF\n\\)\")"
+      "Bash(git -C \"C:\\\\Users\\\\Kenneth\\\\Documents\\\\Projects\\\\SmartSpend\" commit -m \"$\\(cat <<''EOF''\nAdd git worktree setup for parallel agent development\nEOF\n\\)\")",
+      "Bash(gh project:*)",
+      "Bash(gh issue:*)",
+      "Bash(gh api:*)",
+      "Bash(cd:*)"
     ]
   }
 }
