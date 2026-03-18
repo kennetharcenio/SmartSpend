@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SmartSpend.Core.DTOs.Expense;
+using SmartSpend.Core.DTOs.Expenses;
 using SmartSpend.Core.Interfaces;
 
 namespace SmartSpend.API.Controllers;
@@ -18,16 +18,34 @@ public class ExpenseController : ControllerBase
         _expenseService = expenseService;
     }
 
-    private int GetUserId() =>
-        int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<ExpenseResponse>>> GetAll()
+    {
+        var userId = GetUserId();
+        var expenses = await _expenseService.GetAllAsync(userId);
+        return Ok(expenses);
+    }
+
+    [HttpGet("{id}")]
+    public async Task<ActionResult<ExpenseResponse>> GetById(int id)
+    {
+        var userId = GetUserId();
+        var expense = await _expenseService.GetByIdAsync(userId, id);
+
+        if (expense is null)
+            return NotFound(new { message = "Expense not found" });
+
+        return Ok(expense);
+    }
 
     [HttpPost]
     public async Task<ActionResult<ExpenseResponse>> Create([FromBody] CreateExpenseRequest request)
     {
         try
         {
-            var response = await _expenseService.CreateAsync(GetUserId(), request);
-            return CreatedAtAction(nameof(GetById), new { id = response.Id }, response);
+            var userId = GetUserId();
+            var expense = await _expenseService.CreateAsync(userId, request);
+            return CreatedAtAction(nameof(GetById), new { id = expense.Id }, expense);
         }
         catch (InvalidOperationException ex)
         {
@@ -35,39 +53,18 @@ public class ExpenseController : ControllerBase
         }
     }
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<ExpenseResponse>> GetById(int id)
-    {
-        var response = await _expenseService.GetByIdAsync(GetUserId(), id);
-
-        if (response is null)
-        {
-            return NotFound(new { message = "Expense not found" });
-        }
-
-        return Ok(response);
-    }
-
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<ExpenseResponse>>> GetAll()
-    {
-        var response = await _expenseService.GetAllAsync(GetUserId());
-        return Ok(response);
-    }
-
     [HttpPut("{id}")]
     public async Task<ActionResult<ExpenseResponse>> Update(int id, [FromBody] UpdateExpenseRequest request)
     {
         try
         {
-            var response = await _expenseService.UpdateAsync(GetUserId(), id, request);
+            var userId = GetUserId();
+            var expense = await _expenseService.UpdateAsync(userId, id, request);
 
-            if (response is null)
-            {
+            if (expense is null)
                 return NotFound(new { message = "Expense not found" });
-            }
 
-            return Ok(response);
+            return Ok(expense);
         }
         catch (InvalidOperationException ex)
         {
@@ -76,15 +73,19 @@ public class ExpenseController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<ActionResult> Delete(int id)
     {
-        var result = await _expenseService.DeleteAsync(GetUserId(), id);
+        var userId = GetUserId();
+        var deleted = await _expenseService.DeleteAsync(userId, id);
 
-        if (!result)
-        {
+        if (!deleted)
             return NotFound(new { message = "Expense not found" });
-        }
 
         return NoContent();
+    }
+
+    private int GetUserId()
+    {
+        return int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
     }
 }

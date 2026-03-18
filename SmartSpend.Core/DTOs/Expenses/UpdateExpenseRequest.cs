@@ -1,15 +1,15 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace SmartSpend.Core.DTOs.Expense;
+namespace SmartSpend.Core.DTOs.Expenses;
 
-public class CreateExpenseRequest
+public class UpdateExpenseRequest
 {
     [Required]
-    [Range(0.01, double.MaxValue, ErrorMessage = "Amount must be greater than zero.")]
-    public decimal Amount { get; set; }
+    public int CategoryId { get; set; }
 
     [Required]
-    public int CategoryId { get; set; }
+    [Range(0.01, double.MaxValue, ErrorMessage = "Amount must be greater than zero")]
+    public decimal Amount { get; set; }
 
     [MaxLength(500)]
     public string? Description { get; set; }

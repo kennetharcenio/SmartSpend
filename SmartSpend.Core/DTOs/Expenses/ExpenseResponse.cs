@@ -1,10 +1,10 @@
-namespace SmartSpend.Core.DTOs.Expense;
+namespace SmartSpend.Core.DTOs.Expenses;
 
 public class ExpenseResponse
 {
     public int Id { get; set; }
-    public int UserId { get; set; }
     public int CategoryId { get; set; }
+    public string CategoryName { get; set; } = string.Empty;
     public decimal Amount { get; set; }
     public string? Description { get; set; }
     public string? Merchant { get; set; }

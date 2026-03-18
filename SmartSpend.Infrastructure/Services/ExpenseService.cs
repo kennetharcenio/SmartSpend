@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using SmartSpend.Core.DTOs.Expense;
+using SmartSpend.Core.DTOs.Expenses;
 using SmartSpend.Core.Interfaces;
 using SmartSpend.Core.Models;
 using SmartSpend.Infrastructure.Data;
@@ -15,12 +15,29 @@ public class ExpenseService : IExpenseService
         _context = context;
     }
 
+    public async Task<IEnumerable<ExpenseResponse>> GetAllAsync(int userId)
+    {
+        return await _context.Expenses
+            .Include(e => e.Category)
+            .Where(e => e.UserId == userId)
+            .OrderByDescending(e => e.ExpenseDate)
+            .Select(e => MapToResponse(e))
+            .ToListAsync();
+    }
+
+    public async Task<ExpenseResponse?> GetByIdAsync(int userId, int expenseId)
+    {
+        var expense = await _context.Expenses
+            .Include(e => e.Category)
+            .FirstOrDefaultAsync(e => e.Id == expenseId && e.UserId == userId);
+
+        return expense is null ? null : MapToResponse(expense);
+    }
+
     public async Task<ExpenseResponse> CreateAsync(int userId, CreateExpenseRequest request)
     {
-        if (!await _context.Categories.AnyAsync(c => c.Id == request.CategoryId))
-        {
-            throw new InvalidOperationException("Category not found");
-        }
+        var category = await _context.Categories.FindAsync(request.CategoryId)
+            ?? throw new InvalidOperationException("Category not found");
 
         var expense = new Expense
         {
@@ -38,25 +55,10 @@ public class ExpenseService : IExpenseService
         _context.Expenses.Add(expense);
         await _context.SaveChangesAsync();
 
+        // Load the category navigation property for the response
+        expense.Category = category;
+
         return MapToResponse(expense);
-    }
-
-    public async Task<ExpenseResponse?> GetByIdAsync(int userId, int expenseId)
-    {
-        var expense = await _context.Expenses
-            .FirstOrDefaultAsync(e => e.Id == expenseId && e.UserId == userId);
-
-        return expense is null ? null : MapToResponse(expense);
-    }
-
-    public async Task<IEnumerable<ExpenseResponse>> GetAllAsync(int userId)
-    {
-        var expenses = await _context.Expenses
-            .Where(e => e.UserId == userId)
-            .OrderByDescending(e => e.ExpenseDate)
-            .ToListAsync();
-
-        return expenses.Select(MapToResponse);
     }
 
     public async Task<ExpenseResponse?> UpdateAsync(int userId, int expenseId, UpdateExpenseRequest request)
@@ -65,23 +67,21 @@ public class ExpenseService : IExpenseService
             .FirstOrDefaultAsync(e => e.Id == expenseId && e.UserId == userId);
 
         if (expense is null)
-        {
             return null;
-        }
 
-        if (!await _context.Categories.AnyAsync(c => c.Id == request.CategoryId))
-        {
-            throw new InvalidOperationException("Category not found");
-        }
+        var category = await _context.Categories.FindAsync(request.CategoryId)
+            ?? throw new InvalidOperationException("Category not found");
 
-        expense.Amount = request.Amount;
         expense.CategoryId = request.CategoryId;
+        expense.Amount = request.Amount;
         expense.Description = request.Description;
         expense.Merchant = request.Merchant;
         expense.ExpenseDate = request.ExpenseDate;
         expense.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+
+        expense.Category = category;
 
         return MapToResponse(expense);
     }
@@ -92,9 +92,7 @@ public class ExpenseService : IExpenseService
             .FirstOrDefaultAsync(e => e.Id == expenseId && e.UserId == userId);
 
         if (expense is null)
-        {
             return false;
-        }
 
         _context.Expenses.Remove(expense);
         await _context.SaveChangesAsync();
@@ -107,8 +105,8 @@ public class ExpenseService : IExpenseService
         return new ExpenseResponse
         {
             Id = expense.Id,
-            UserId = expense.UserId,
             CategoryId = expense.CategoryId,
+            CategoryName = expense.Category.Name,
             Amount = expense.Amount,
             Description = expense.Description,
             Merchant = expense.Merchant,
