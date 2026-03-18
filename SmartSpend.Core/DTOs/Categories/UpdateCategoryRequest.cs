@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace SmartSpend.Core.DTOs.Category;
+namespace SmartSpend.Core.DTOs.Categories;
 
-public class CreateCategoryRequest
+public class UpdateCategoryRequest
 {
     [Required]
     [MaxLength(50)]

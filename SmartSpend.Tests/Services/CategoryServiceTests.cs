@@ -1,6 +1,6 @@
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
-using SmartSpend.Core.DTOs.Category;
+using SmartSpend.Core.DTOs.Categories;
 using SmartSpend.Core.Models;
 using SmartSpend.Infrastructure.Data;
 using SmartSpend.Infrastructure.Services;
@@ -11,7 +11,7 @@ public class CategoryServiceTests : IDisposable
 {
     private readonly AppDbContext _context;
     private readonly CategoryService _categoryService;
-    private readonly int _testUserId;
+    private readonly int _userId;
 
     public CategoryServiceTests()
     {
@@ -20,20 +20,27 @@ public class CategoryServiceTests : IDisposable
             .Options;
 
         _context = new AppDbContext(options);
-        _categoryService = new CategoryService(_context);
 
-        // Seed a test user
+        // Seed a user
         var user = new User
         {
             Email = "test@example.com",
-            PasswordHash = "hashedpassword",
+            PasswordHash = "hashed",
             FullName = "Test User",
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
         _context.Users.Add(user);
+
+        // Seed default categories
+        _context.Categories.AddRange(
+            new Category { Name = "Food", Icon = "🍔", IsDefault = true },
+            new Category { Name = "Transport", Icon = "🚗", IsDefault = true }
+        );
         _context.SaveChanges();
-        _testUserId = user.Id;
+
+        _userId = user.Id;
+        _categoryService = new CategoryService(_context);
     }
 
     public void Dispose()
@@ -41,54 +48,126 @@ public class CategoryServiceTests : IDisposable
         _context.Dispose();
     }
 
-    #region GetByUserIdAsync Tests
+    #region GetAllAsync Tests
 
     [Fact]
-    public async Task GetCategories_ReturnsDefaultAndUserCategories()
+    public async Task GetAllAsync_ReturnsDefaultAndUserCategories()
     {
-        // Arrange - seed default categories and user-specific ones
-        _context.Categories.AddRange(
-            new Category { Name = "Food", Icon = "🍔", IsDefault = true, UserId = null },
-            new Category { Name = "Transport", Icon = "🚗", IsDefault = true, UserId = null },
-            new Category { Name = "My Custom", Icon = "⭐", IsDefault = false, UserId = _testUserId }
-        );
+        // Arrange - create a custom category for the user
+        await _categoryService.CreateAsync(_userId, new CreateCategoryRequest
+        {
+            Name = "Custom",
+            Icon = "⭐"
+        });
 
-        // Add another user's custom category (should NOT be returned)
+        // Act
+        var results = (await _categoryService.GetAllAsync(_userId)).ToList();
+
+        // Assert - should include 2 defaults + 1 custom
+        results.Should().HaveCount(3);
+        results.Should().Contain(c => c.Name == "Food" && c.IsDefault);
+        results.Should().Contain(c => c.Name == "Transport" && c.IsDefault);
+        results.Should().Contain(c => c.Name == "Custom" && !c.IsDefault);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_DoesNotReturnOtherUsersCategories()
+    {
+        // Arrange - create categories for two different users
         var otherUser = new User
         {
             Email = "other@example.com",
-            PasswordHash = "hash",
-            FullName = "Other",
+            PasswordHash = "hashed",
+            FullName = "Other User",
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
         _context.Users.Add(otherUser);
         await _context.SaveChangesAsync();
 
-        _context.Categories.Add(
-            new Category { Name = "Other's Category", IsDefault = false, UserId = otherUser.Id }
-        );
-        await _context.SaveChangesAsync();
+        await _categoryService.CreateAsync(_userId, new CreateCategoryRequest { Name = "MyCategory" });
+        await _categoryService.CreateAsync(otherUser.Id, new CreateCategoryRequest { Name = "TheirCategory" });
 
         // Act
-        var results = await _categoryService.GetByUserIdAsync(_testUserId);
+        var results = (await _categoryService.GetAllAsync(_userId)).ToList();
 
         // Assert
-        results.Should().HaveCount(3);
-        results.Should().Contain(c => c.Name == "Food" && c.IsDefault);
-        results.Should().Contain(c => c.Name == "Transport" && c.IsDefault);
-        results.Should().Contain(c => c.Name == "My Custom" && !c.IsDefault);
-        results.Should().NotContain(c => c.Name == "Other's Category");
+        results.Should().Contain(c => c.Name == "MyCategory");
+        results.Should().NotContain(c => c.Name == "TheirCategory");
+    }
+
+    #endregion
+
+    #region GetByIdAsync Tests
+
+    [Fact]
+    public async Task GetByIdAsync_DefaultCategory_ReturnsCategory()
+    {
+        // Arrange
+        var defaultCategory = await _context.Categories.FirstAsync(c => c.IsDefault);
+
+        // Act
+        var result = await _categoryService.GetByIdAsync(_userId, defaultCategory.Id);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Name.Should().Be(defaultCategory.Name);
+        result.IsDefault.Should().BeTrue();
     }
 
     [Fact]
-    public async Task GetCategories_NoCategories_ReturnsEmptyList()
+    public async Task GetByIdAsync_UserCategory_ReturnsCategory()
     {
+        // Arrange
+        var created = await _categoryService.CreateAsync(_userId, new CreateCategoryRequest
+        {
+            Name = "Custom",
+            Icon = "⭐"
+        });
+
         // Act
-        var results = await _categoryService.GetByUserIdAsync(_testUserId);
+        var result = await _categoryService.GetByIdAsync(_userId, created.Id);
 
         // Assert
-        results.Should().BeEmpty();
+        result.Should().NotBeNull();
+        result!.Name.Should().Be("Custom");
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_OtherUsersCategory_ReturnsNull()
+    {
+        // Arrange
+        var otherUser = new User
+        {
+            Email = "other@example.com",
+            PasswordHash = "hashed",
+            FullName = "Other User",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        _context.Users.Add(otherUser);
+        await _context.SaveChangesAsync();
+
+        var otherCategory = await _categoryService.CreateAsync(otherUser.Id, new CreateCategoryRequest
+        {
+            Name = "TheirCategory"
+        });
+
+        // Act
+        var result = await _categoryService.GetByIdAsync(_userId, otherCategory.Id);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_NonExistent_ReturnsNull()
+    {
+        // Act
+        var result = await _categoryService.GetByIdAsync(_userId, 999);
+
+        // Assert
+        result.Should().BeNull();
     }
 
     #endregion
@@ -96,29 +175,63 @@ public class CategoryServiceTests : IDisposable
     #region CreateAsync Tests
 
     [Fact]
-    public async Task CreateCategory_ValidRequest_ReturnsCategory()
+    public async Task CreateAsync_ValidRequest_ReturnsCustomCategory()
     {
         // Arrange
         var request = new CreateCategoryRequest
         {
             Name = "Entertainment",
-            Icon = "🎬"
+            Icon = "🎮"
         };
 
         // Act
-        var result = await _categoryService.CreateAsync(_testUserId, request);
+        var result = await _categoryService.CreateAsync(_userId, request);
 
         // Assert
         result.Should().NotBeNull();
         result.Id.Should().BeGreaterThan(0);
         result.Name.Should().Be("Entertainment");
-        result.Icon.Should().Be("🎬");
+        result.Icon.Should().Be("🎮");
         result.IsDefault.Should().BeFalse();
+    }
 
-        // Verify persisted and linked to user
-        var dbCategory = await _context.Categories.FindAsync(result.Id);
-        dbCategory.Should().NotBeNull();
-        dbCategory!.UserId.Should().Be(_testUserId);
+    [Fact]
+    public async Task CreateAsync_DuplicateNameForUser_ThrowsException()
+    {
+        // Arrange
+        await _categoryService.CreateAsync(_userId, new CreateCategoryRequest { Name = "Custom" });
+
+        // Act
+        var act = async () => await _categoryService.CreateAsync(_userId, new CreateCategoryRequest { Name = "Custom" });
+
+        // Assert
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("Category with this name already exists");
+    }
+
+    [Fact]
+    public async Task CreateAsync_SameNameAsDifferentUser_Succeeds()
+    {
+        // Arrange
+        var otherUser = new User
+        {
+            Email = "other@example.com",
+            PasswordHash = "hashed",
+            FullName = "Other User",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        _context.Users.Add(otherUser);
+        await _context.SaveChangesAsync();
+
+        await _categoryService.CreateAsync(otherUser.Id, new CreateCategoryRequest { Name = "Shared Name" });
+
+        // Act
+        var result = await _categoryService.CreateAsync(_userId, new CreateCategoryRequest { Name = "Shared Name" });
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Name.Should().Be("Shared Name");
     }
 
     #endregion
@@ -126,88 +239,81 @@ public class CategoryServiceTests : IDisposable
     #region UpdateAsync Tests
 
     [Fact]
-    public async Task UpdateCategory_ValidRequest_ReturnsUpdatedCategory()
+    public async Task UpdateAsync_UserCategory_ReturnsUpdated()
     {
         // Arrange
-        var category = new Category
+        var created = await _categoryService.CreateAsync(_userId, new CreateCategoryRequest
         {
             Name = "Old Name",
-            Icon = "🔴",
-            IsDefault = false,
-            UserId = _testUserId
-        };
-        _context.Categories.Add(category);
-        await _context.SaveChangesAsync();
+            Icon = "🔵"
+        });
 
         var updateRequest = new UpdateCategoryRequest
         {
             Name = "New Name",
-            Icon = "🟢"
+            Icon = "🔴"
         };
 
         // Act
-        var result = await _categoryService.UpdateAsync(_testUserId, category.Id, updateRequest);
+        var result = await _categoryService.UpdateAsync(_userId, created.Id, updateRequest);
 
         // Assert
-        result.Name.Should().Be("New Name");
-        result.Icon.Should().Be("🟢");
+        result.Should().NotBeNull();
+        result!.Name.Should().Be("New Name");
+        result.Icon.Should().Be("🔴");
     }
 
     [Fact]
-    public async Task UpdateCategory_NotOwner_ThrowsException()
+    public async Task UpdateAsync_DefaultCategory_ReturnsNull()
     {
-        // Arrange - create category owned by another user
+        // Arrange
+        var defaultCategory = await _context.Categories.FirstAsync(c => c.IsDefault);
+
+        var updateRequest = new UpdateCategoryRequest
+        {
+            Name = "Hacked",
+            Icon = "💀"
+        };
+
+        // Act
+        var result = await _categoryService.UpdateAsync(_userId, defaultCategory.Id, updateRequest);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_OtherUsersCategory_ReturnsNull()
+    {
+        // Arrange
         var otherUser = new User
         {
             Email = "other@example.com",
-            PasswordHash = "hash",
-            FullName = "Other",
+            PasswordHash = "hashed",
+            FullName = "Other User",
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
         _context.Users.Add(otherUser);
         await _context.SaveChangesAsync();
 
-        var category = new Category
-        {
-            Name = "Other's Category",
-            IsDefault = false,
-            UserId = otherUser.Id
-        };
-        _context.Categories.Add(category);
-        await _context.SaveChangesAsync();
-
-        var updateRequest = new UpdateCategoryRequest { Name = "Hacked" };
+        var otherCategory = await _categoryService.CreateAsync(otherUser.Id, new CreateCategoryRequest { Name = "Theirs" });
 
         // Act
-        var act = async () => await _categoryService.UpdateAsync(_testUserId, category.Id, updateRequest);
+        var result = await _categoryService.UpdateAsync(_userId, otherCategory.Id, new UpdateCategoryRequest { Name = "Stolen" });
 
         // Assert
-        await act.Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("You do not own this category");
+        result.Should().BeNull();
     }
 
     [Fact]
-    public async Task UpdateCategory_DefaultCategory_ThrowsException()
+    public async Task UpdateAsync_NonExistent_ReturnsNull()
     {
-        // Arrange
-        var category = new Category
-        {
-            Name = "Food",
-            IsDefault = true,
-            UserId = null
-        };
-        _context.Categories.Add(category);
-        await _context.SaveChangesAsync();
-
-        var updateRequest = new UpdateCategoryRequest { Name = "Renamed" };
-
         // Act
-        var act = async () => await _categoryService.UpdateAsync(_testUserId, category.Id, updateRequest);
+        var result = await _categoryService.UpdateAsync(_userId, 999, new UpdateCategoryRequest { Name = "X" });
 
         // Assert
-        await act.Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("You do not own this category");
+        result.Should().BeNull();
     }
 
     #endregion
@@ -215,88 +321,64 @@ public class CategoryServiceTests : IDisposable
     #region DeleteAsync Tests
 
     [Fact]
-    public async Task DeleteCategory_ValidId_RemovesCategory()
+    public async Task DeleteAsync_UserCategory_ReturnsTrue()
     {
         // Arrange
-        var category = new Category
-        {
-            Name = "To Delete",
-            IsDefault = false,
-            UserId = _testUserId
-        };
-        _context.Categories.Add(category);
-        await _context.SaveChangesAsync();
+        var created = await _categoryService.CreateAsync(_userId, new CreateCategoryRequest { Name = "ToDelete" });
 
         // Act
-        await _categoryService.DeleteAsync(_testUserId, category.Id);
+        var result = await _categoryService.DeleteAsync(_userId, created.Id);
 
         // Assert
-        var deleted = await _context.Categories.FindAsync(category.Id);
-        deleted.Should().BeNull();
+        result.Should().BeTrue();
+        (await _categoryService.GetByIdAsync(_userId, created.Id)).Should().BeNull();
     }
 
     [Fact]
-    public async Task DeleteCategory_WithExpenses_ThrowsException()
+    public async Task DeleteAsync_DefaultCategory_ReturnsFalse()
     {
         // Arrange
-        var category = new Category
-        {
-            Name = "Has Expenses",
-            IsDefault = false,
-            UserId = _testUserId
-        };
-        _context.Categories.Add(category);
-        await _context.SaveChangesAsync();
-
-        _context.Expenses.Add(new Expense
-        {
-            UserId = _testUserId,
-            CategoryId = category.Id,
-            Amount = 10.00m,
-            ExpenseDate = DateTime.UtcNow,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        });
-        await _context.SaveChangesAsync();
+        var defaultCategory = await _context.Categories.FirstAsync(c => c.IsDefault);
 
         // Act
-        var act = async () => await _categoryService.DeleteAsync(_testUserId, category.Id);
+        var result = await _categoryService.DeleteAsync(_userId, defaultCategory.Id);
 
         // Assert
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("Cannot delete category with existing expenses");
+        result.Should().BeFalse();
     }
 
     [Fact]
-    public async Task DeleteCategory_NotOwner_ThrowsException()
+    public async Task DeleteAsync_OtherUsersCategory_ReturnsFalse()
     {
         // Arrange
         var otherUser = new User
         {
             Email = "other@example.com",
-            PasswordHash = "hash",
-            FullName = "Other",
+            PasswordHash = "hashed",
+            FullName = "Other User",
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
         _context.Users.Add(otherUser);
         await _context.SaveChangesAsync();
 
-        var category = new Category
-        {
-            Name = "Not Mine",
-            IsDefault = false,
-            UserId = otherUser.Id
-        };
-        _context.Categories.Add(category);
-        await _context.SaveChangesAsync();
+        var otherCategory = await _categoryService.CreateAsync(otherUser.Id, new CreateCategoryRequest { Name = "Theirs" });
 
         // Act
-        var act = async () => await _categoryService.DeleteAsync(_testUserId, category.Id);
+        var result = await _categoryService.DeleteAsync(_userId, otherCategory.Id);
 
         // Assert
-        await act.Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("You do not own this category");
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task DeleteAsync_NonExistent_ReturnsFalse()
+    {
+        // Act
+        var result = await _categoryService.DeleteAsync(_userId, 999);
+
+        // Assert
+        result.Should().BeFalse();
     }
 
     #endregion

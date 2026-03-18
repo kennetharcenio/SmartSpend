@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using SmartSpend.Core.DTOs.Category;
+using SmartSpend.Core.DTOs.Categories;
 using SmartSpend.Core.Interfaces;
 using SmartSpend.Core.Models;
 using SmartSpend.Infrastructure.Data;
@@ -15,23 +15,31 @@ public class CategoryService : ICategoryService
         _context = context;
     }
 
-    public async Task<List<CategoryResponse>> GetByUserIdAsync(int userId)
+    public async Task<IEnumerable<CategoryResponse>> GetAllAsync(int userId)
     {
         return await _context.Categories
             .Where(c => c.IsDefault || c.UserId == userId)
             .OrderBy(c => c.Name)
-            .Select(c => new CategoryResponse
-            {
-                Id = c.Id,
-                Name = c.Name,
-                Icon = c.Icon,
-                IsDefault = c.IsDefault
-            })
+            .Select(c => MapToResponse(c))
             .ToListAsync();
+    }
+
+    public async Task<CategoryResponse?> GetByIdAsync(int userId, int categoryId)
+    {
+        var category = await _context.Categories
+            .FirstOrDefaultAsync(c => c.Id == categoryId && (c.IsDefault || c.UserId == userId));
+
+        return category is null ? null : MapToResponse(category);
     }
 
     public async Task<CategoryResponse> CreateAsync(int userId, CreateCategoryRequest request)
     {
+        var exists = await _context.Categories
+            .AnyAsync(c => c.Name == request.Name && (c.UserId == userId || c.IsDefault));
+
+        if (exists)
+            throw new InvalidOperationException("Category with this name already exists");
+
         var category = new Category
         {
             Name = request.Name,
@@ -46,15 +54,13 @@ public class CategoryService : ICategoryService
         return MapToResponse(category);
     }
 
-    public async Task<CategoryResponse> UpdateAsync(int userId, int categoryId, UpdateCategoryRequest request)
+    public async Task<CategoryResponse?> UpdateAsync(int userId, int categoryId, UpdateCategoryRequest request)
     {
-        var category = await _context.Categories.FindAsync(categoryId);
+        var category = await _context.Categories
+            .FirstOrDefaultAsync(c => c.Id == categoryId && c.UserId == userId && !c.IsDefault);
 
-        if (category == null)
-            throw new KeyNotFoundException("Category not found");
-
-        if (category.IsDefault || category.UserId != userId)
-            throw new UnauthorizedAccessException("You do not own this category");
+        if (category is null)
+            return null;
 
         category.Name = request.Name;
         category.Icon = request.Icon;
@@ -64,23 +70,18 @@ public class CategoryService : ICategoryService
         return MapToResponse(category);
     }
 
-    public async Task DeleteAsync(int userId, int categoryId)
+    public async Task<bool> DeleteAsync(int userId, int categoryId)
     {
         var category = await _context.Categories
-            .Include(c => c.Expenses)
-            .FirstOrDefaultAsync(c => c.Id == categoryId);
+            .FirstOrDefaultAsync(c => c.Id == categoryId && c.UserId == userId && !c.IsDefault);
 
-        if (category == null)
-            throw new KeyNotFoundException("Category not found");
-
-        if (category.IsDefault || category.UserId != userId)
-            throw new UnauthorizedAccessException("You do not own this category");
-
-        if (category.Expenses.Any())
-            throw new InvalidOperationException("Cannot delete category with existing expenses");
+        if (category is null)
+            return false;
 
         _context.Categories.Remove(category);
         await _context.SaveChangesAsync();
+
+        return true;
     }
 
     private static CategoryResponse MapToResponse(Category category)

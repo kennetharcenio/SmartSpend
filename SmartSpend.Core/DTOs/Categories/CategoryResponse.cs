@@ -1,4 +1,4 @@
-namespace SmartSpend.Core.DTOs.Category;
+namespace SmartSpend.Core.DTOs.Categories;
 
 public class CategoryResponse
 {
