@@ -68,6 +68,20 @@ dotnet test
 
 Project kanban: https://github.com/users/kennetharcenio/projects/2
 
+## n8n Integration
+
+![n8n Integration](docs/n8n-integration.svg)
+
+SmartSpend integrates with [n8n](https://n8n.io) for workflow automation:
+
+| Workflow | Trigger | What it does |
+|----------|---------|-------------|
+| **Receipt Parser** | Email inbox watch | Extracts expense data from receipts via OCR/AI, auto-creates expenses |
+| **Budget Alerts** | Daily cron | Checks spending against thresholds, sends Slack/email notifications |
+| **Monthly Insights** | 1st of month | Aggregates spending, generates GPT-4o insights, stores in database |
+
+Webhook endpoints use API key auth (`X-API-Key` header) for service-to-service communication.
+
 ## API Endpoints
 
 | Method | Endpoint | Description |
@@ -78,6 +92,9 @@ Project kanban: https://github.com/users/kennetharcenio/projects/2
 | POST | `/api/expense` | Create expense |
 | PUT | `/api/expense/{id}` | Update expense |
 | DELETE | `/api/expense/{id}` | Delete expense |
+| POST | `/api/webhooks/expenses/parse` | Parse receipt text into expense (n8n) |
+| GET | `/api/expenses/summary` | Get spending summary by date range (n8n) |
+| POST | `/api/webhooks/insights` | Store AI-generated insight (n8n) |
 
 ## Database Tables
 

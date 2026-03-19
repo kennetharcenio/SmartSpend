@@ -58,7 +58,8 @@ Project kanban: https://github.com/users/kennetharcenio/projects/2
 1. Check the board for tasks assigned to your role
 2. Move task to "In Progress" when starting
 3. Complete the work following TDD
-4. Move task to "Done" when finished
+4. Commit, push, and **create a PR targeting master** for the completed task
+5. Move task to "Done" on the project board
 
 ### gh CLI Commands
 ```bash

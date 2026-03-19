@@ -1,0 +1,146 @@
+<svg width="100%" viewBox="0 0 780 620" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+      .title { font-size: 18px; font-weight: 700; fill: #1a1a2e; }
+      .subtitle { font-size: 11px; fill: #6b7280; }
+      .box-label { font-size: 13px; font-weight: 600; fill: #1a1a2e; }
+      .box-detail { font-size: 10.5px; fill: #4b5563; }
+      .section-label { font-size: 11px; font-weight: 700; fill: #ffffff; letter-spacing: 0.5px; }
+      .endpoint { font-size: 10px; font-family: 'SF Mono', 'Cascadia Code', monospace; fill: #7c3aed; }
+      .method { font-size: 9px; font-weight: 700; font-family: 'SF Mono', monospace; }
+      .arrow-label { font-size: 9.5px; fill: #6b7280; font-style: italic; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="780" height="620" rx="12" fill="#fafafa" stroke="#e5e7eb" stroke-width="1"/>
+
+  <!-- Title -->
+  <text x="390" y="35" text-anchor="middle" class="title">n8n Integration Architecture</text>
+  <text x="390" y="52" text-anchor="middle" class="subtitle">Workflow automation for SmartSpend via webhook endpoints</text>
+
+  <!-- ═══════════ EXTERNAL TRIGGERS (top row) ═══════════ -->
+  <rect x="30" y="75" width="140" height="60" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="100" y="100" text-anchor="middle" class="box-label">Email Inbox</text>
+  <text x="100" y="115" text-anchor="middle" class="box-detail">Receipts / Bank alerts</text>
+
+  <rect x="200" y="75" width="140" height="60" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="270" y="100" text-anchor="middle" class="box-label">Cron Schedule</text>
+  <text x="270" y="115" text-anchor="middle" class="box-detail">Daily / Monthly</text>
+
+  <rect x="370" y="75" width="140" height="60" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="440" y="100" text-anchor="middle" class="box-label">Manual Trigger</text>
+  <text x="440" y="115" text-anchor="middle" class="box-detail">User-initiated</text>
+
+  <rect x="540" y="75" width="140" height="60" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="610" y="100" text-anchor="middle" class="box-label">OCR / Vision API</text>
+  <text x="610" y="115" text-anchor="middle" class="box-detail">Receipt image parsing</text>
+
+  <!-- ═══════════ n8n WORKFLOWS (middle section) ═══════════ -->
+  <rect x="30" y="170" width="720" height="175" rx="10" fill="#ffffff" stroke="#d946ef" stroke-width="2"/>
+  <!-- n8n header bar -->
+  <rect x="30" y="170" width="720" height="28" rx="10" fill="#d946ef"/>
+  <rect x="30" y="185" width="720" height="13" fill="#d946ef"/>
+  <text x="390" y="189" text-anchor="middle" class="section-label">n8n  WORKFLOW ENGINE</text>
+
+  <!-- Workflow 1: Receipt Parser -->
+  <rect x="50" y="210" width="210" height="120" rx="8" fill="#faf5ff" stroke="#d946ef" stroke-width="1"/>
+  <text x="155" y="233" text-anchor="middle" class="box-label">Receipt Parser</text>
+  <line x1="70" y1="240" x2="240" y2="240" stroke="#e9d5ff" stroke-width="1"/>
+  <text x="60" y="258" class="box-detail">1. Watch email inbox</text>
+  <text x="60" y="273" class="box-detail">2. Extract receipt image</text>
+  <text x="60" y="288" class="box-detail">3. OCR / AI parse text</text>
+  <text x="60" y="303" class="box-detail">4. POST to SmartSpend API</text>
+  <circle cx="235" cy="225" r="8" fill="#22c55e"/>
+  <text x="235" y="229" text-anchor="middle" style="font-size:10px;fill:#fff;font-weight:700">1</text>
+
+  <!-- Workflow 2: Budget Alerts -->
+  <rect x="280" y="210" width="210" height="120" rx="8" fill="#faf5ff" stroke="#d946ef" stroke-width="1"/>
+  <text x="385" y="233" text-anchor="middle" class="box-label">Budget Alerts</text>
+  <line x1="300" y1="240" x2="470" y2="240" stroke="#e9d5ff" stroke-width="1"/>
+  <text x="290" y="258" class="box-detail">1. Cron trigger (daily)</text>
+  <text x="290" y="273" class="box-detail">2. GET expense summary</text>
+  <text x="290" y="288" class="box-detail">3. Check thresholds</text>
+  <text x="290" y="303" class="box-detail">4. Send notification</text>
+  <circle cx="465" cy="225" r="8" fill="#3b82f6"/>
+  <text x="465" y="229" text-anchor="middle" style="font-size:10px;fill:#fff;font-weight:700">2</text>
+
+  <!-- Workflow 3: Monthly Insights -->
+  <rect x="510" y="210" width="220" height="120" rx="8" fill="#faf5ff" stroke="#d946ef" stroke-width="1"/>
+  <text x="620" y="233" text-anchor="middle" class="box-label">Monthly Insights</text>
+  <line x1="530" y1="240" x2="710" y2="240" stroke="#e9d5ff" stroke-width="1"/>
+  <text x="520" y="258" class="box-detail">1. Cron (1st of month)</text>
+  <text x="520" y="273" class="box-detail">2. GET expense summary</text>
+  <text x="520" y="288" class="box-detail">3. Send to GPT-4o</text>
+  <text x="520" y="303" class="box-detail">4. POST insight to API</text>
+  <circle cx="705" cy="225" r="8" fill="#8b5cf6"/>
+  <text x="705" y="229" text-anchor="middle" style="font-size:10px;fill:#fff;font-weight:700">3</text>
+
+  <!-- ═══════════ ARROWS: Triggers → n8n ═══════════ -->
+  <line x1="100" y1="135" x2="100" y2="210" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="270" y1="135" x2="385" y2="210" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="440" y1="135" x2="440" y2="170" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="610" y1="135" x2="155" y2="210" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- ═══════════ SmartSpend API (bottom section) ═══════════ -->
+  <rect x="30" y="390" width="720" height="195" rx="10" fill="#ffffff" stroke="#2563eb" stroke-width="2"/>
+  <!-- API header bar -->
+  <rect x="30" y="390" width="720" height="28" rx="10" fill="#2563eb"/>
+  <rect x="30" y="405" width="720" height="13" fill="#2563eb"/>
+  <text x="390" y="409" text-anchor="middle" class="section-label">SmartSpend API  (X-API-Key Auth)</text>
+
+  <!-- Endpoint 1 -->
+  <rect x="50" y="430" width="210" height="65" rx="6" fill="#eff6ff" stroke="#93c5fd" stroke-width="1"/>
+  <rect x="60" y="440" width="40" height="16" rx="3" fill="#22c55e"/>
+  <text x="80" y="452" text-anchor="middle" class="method" fill="#fff">POST</text>
+  <text x="60" y="470" class="endpoint">/api/webhooks/expenses/parse</text>
+  <text x="60" y="485" class="box-detail">Parse raw text → Expense</text>
+
+  <!-- Endpoint 2 -->
+  <rect x="280" y="430" width="210" height="65" rx="6" fill="#eff6ff" stroke="#93c5fd" stroke-width="1"/>
+  <rect x="290" y="440" width="32" height="16" rx="3" fill="#3b82f6"/>
+  <text x="306" y="452" text-anchor="middle" class="method" fill="#fff">GET</text>
+  <text x="290" y="470" class="endpoint">/api/expenses/summary</text>
+  <text x="290" y="485" class="box-detail">Spending summary by date range</text>
+
+  <!-- Endpoint 3 -->
+  <rect x="510" y="430" width="220" height="65" rx="6" fill="#eff6ff" stroke="#93c5fd" stroke-width="1"/>
+  <rect x="520" y="440" width="40" height="16" rx="3" fill="#22c55e"/>
+  <text x="540" y="452" text-anchor="middle" class="method" fill="#fff">POST</text>
+  <text x="520" y="470" class="endpoint">/api/webhooks/insights</text>
+  <text x="520" y="485" class="box-detail">Store AI-generated insight</text>
+
+  <!-- Data layer -->
+  <rect x="150" y="520" width="200" height="50" rx="8" fill="#f0fdf4" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="250" y="545" text-anchor="middle" class="box-label">SQL Server</text>
+  <text x="250" y="559" text-anchor="middle" class="box-detail">Expenses + AIInsights tables</text>
+
+  <rect x="420" y="520" width="200" height="50" rx="8" fill="#faf5ff" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="520" y="545" text-anchor="middle" class="box-label">OpenAI GPT-4o</text>
+  <text x="520" y="559" text-anchor="middle" class="box-detail">Expense parsing + Insights</text>
+
+  <!-- ═══════════ ARROWS: n8n → API ═══════════ -->
+  <line x1="155" y1="330" x2="155" y2="430" stroke="#d946ef" stroke-width="2" marker-end="url(#arrow)" stroke-dasharray="6,3"/>
+  <text x="110" y="380" class="arrow-label">parse receipt</text>
+
+  <line x1="385" y1="330" x2="385" y2="430" stroke="#d946ef" stroke-width="2" marker-end="url(#arrow)" stroke-dasharray="6,3"/>
+  <text x="340" y="380" class="arrow-label">get summary</text>
+
+  <line x1="620" y1="330" x2="620" y2="430" stroke="#d946ef" stroke-width="2" marker-end="url(#arrow)" stroke-dasharray="6,3"/>
+  <text x="575" y="380" class="arrow-label">store insight</text>
+
+  <!-- API → DB arrows -->
+  <line x1="155" y1="495" x2="220" y2="520" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="385" y1="495" x2="280" y2="520" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="620" y1="495" x2="550" y2="520" stroke="#8b5cf6" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- ═══════════ NOTIFICATIONS (right side) ═══════════ -->
+  <rect x="540" y="75" width="0" height="0"/>
+  <!-- Notification outputs from workflow 2 -->
+  <rect x="680" y="250" width="0" height="0"/>
+
+</svg>

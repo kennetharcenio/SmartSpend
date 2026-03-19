@@ -71,7 +71,11 @@
       "Bash(gh project:*)",
       "Bash(gh issue:*)",
       "Bash(gh api:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(git merge:*)",
+      "Bash(git push)",
+      "Bash(find:*)",
+      "Bash(gh label:*)"
     ]
   }
 }
