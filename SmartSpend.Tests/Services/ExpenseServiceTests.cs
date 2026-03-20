@@ -143,6 +143,90 @@ public class ExpenseServiceTests : IDisposable
         result.UpdatedAt.Should().BeOnOrAfter(before).And.BeOnOrBefore(after);
     }
 
+    [Fact]
+    public async Task CreateAsync_NullOptionalFields_Succeeds()
+    {
+        // Arrange
+        var request = new CreateExpenseRequest
+        {
+            CategoryId = _categoryId,
+            Amount = 50m,
+            Description = null,
+            Merchant = null,
+            ExpenseDate = DateTime.UtcNow
+        };
+
+        // Act
+        var result = await _expenseService.CreateAsync(_userId, request);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Description.Should().BeNull();
+        result.Merchant.Should().BeNull();
+        result.Amount.Should().Be(50m);
+    }
+
+    [Fact]
+    public async Task CreateAsync_VeryLargeAmount_Succeeds()
+    {
+        // Arrange
+        var request = new CreateExpenseRequest
+        {
+            CategoryId = _categoryId,
+            Amount = 999999999.99m,
+            ExpenseDate = DateTime.UtcNow
+        };
+
+        // Act
+        var result = await _expenseService.CreateAsync(_userId, request);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Amount.Should().Be(999999999.99m);
+    }
+
+    [Fact]
+    public async Task CreateAsync_SmallAmount_Succeeds()
+    {
+        // Arrange
+        var request = new CreateExpenseRequest
+        {
+            CategoryId = _categoryId,
+            Amount = 0.01m,
+            ExpenseDate = DateTime.UtcNow
+        };
+
+        // Act
+        var result = await _expenseService.CreateAsync(_userId, request);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Amount.Should().Be(0.01m);
+    }
+
+    [Fact]
+    public async Task CreateAsync_MapsCorrectCategoryName()
+    {
+        // Arrange
+        var newCategory = new Category { Name = "Entertainment", Icon = "🎬", IsDefault = false, UserId = _userId };
+        _context.Categories.Add(newCategory);
+        await _context.SaveChangesAsync();
+
+        var request = new CreateExpenseRequest
+        {
+            CategoryId = newCategory.Id,
+            Amount = 15m,
+            ExpenseDate = DateTime.UtcNow
+        };
+
+        // Act
+        var result = await _expenseService.CreateAsync(_userId, request);
+
+        // Assert
+        result.CategoryName.Should().Be("Entertainment");
+        result.CategoryId.Should().Be(newCategory.Id);
+    }
+
     #endregion
 
     #region GetAllAsync Tests
@@ -198,6 +282,72 @@ public class ExpenseServiceTests : IDisposable
 
         // Assert
         results.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetAllAsync_ReturnsExpensesOrderedByDateDescending()
+    {
+        // Arrange
+        await _expenseService.CreateAsync(_userId, new CreateExpenseRequest
+        {
+            CategoryId = _categoryId,
+            Amount = 10m,
+            ExpenseDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+        });
+        await _expenseService.CreateAsync(_userId, new CreateExpenseRequest
+        {
+            CategoryId = _categoryId,
+            Amount = 30m,
+            ExpenseDate = new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc)
+        });
+        await _expenseService.CreateAsync(_userId, new CreateExpenseRequest
+        {
+            CategoryId = _categoryId,
+            Amount = 20m,
+            ExpenseDate = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc)
+        });
+
+        // Act
+        var results = (await _expenseService.GetAllAsync(_userId)).ToList();
+
+        // Assert
+        results.Should().HaveCount(3);
+        results[0].Amount.Should().Be(30m); // March (most recent)
+        results[1].Amount.Should().Be(20m); // February
+        results[2].Amount.Should().Be(10m); // January (oldest)
+    }
+
+    [Fact]
+    public async Task GetAllAsync_MultipleUsers_IsolatesData()
+    {
+        // Arrange
+        var user2 = new User
+        {
+            Email = "user2@example.com",
+            PasswordHash = "hashed",
+            FullName = "User 2",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        var user3 = new User
+        {
+            Email = "user3@example.com",
+            PasswordHash = "hashed",
+            FullName = "User 3",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        _context.Users.AddRange(user2, user3);
+        await _context.SaveChangesAsync();
+
+        await _expenseService.CreateAsync(_userId, new CreateExpenseRequest { CategoryId = _categoryId, Amount = 10m, ExpenseDate = DateTime.UtcNow });
+        await _expenseService.CreateAsync(user2.Id, new CreateExpenseRequest { CategoryId = _categoryId, Amount = 20m, ExpenseDate = DateTime.UtcNow });
+        await _expenseService.CreateAsync(user3.Id, new CreateExpenseRequest { CategoryId = _categoryId, Amount = 30m, ExpenseDate = DateTime.UtcNow });
+
+        // Act & Assert
+        (await _expenseService.GetAllAsync(_userId)).Should().HaveCount(1);
+        (await _expenseService.GetAllAsync(user2.Id)).Should().HaveCount(1);
+        (await _expenseService.GetAllAsync(user3.Id)).Should().HaveCount(1);
     }
 
     #endregion
@@ -359,6 +509,99 @@ public class ExpenseServiceTests : IDisposable
             .WithMessage("Category not found");
     }
 
+    [Fact]
+    public async Task UpdateAsync_PreservesCreatedAtTimestamp()
+    {
+        // Arrange
+        var created = await _expenseService.CreateAsync(_userId, new CreateExpenseRequest
+        {
+            CategoryId = _categoryId,
+            Amount = 10m,
+            ExpenseDate = DateTime.UtcNow
+        });
+        var originalCreatedAt = created.CreatedAt;
+
+        var updateRequest = new UpdateExpenseRequest
+        {
+            CategoryId = _categoryId,
+            Amount = 99m,
+            ExpenseDate = DateTime.UtcNow
+        };
+
+        // Act
+        var result = await _expenseService.UpdateAsync(_userId, created.Id, updateRequest);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.CreatedAt.Should().Be(originalCreatedAt);
+        result.UpdatedAt.Should().BeOnOrAfter(originalCreatedAt);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ChangesCategory_UpdatesCategoryName()
+    {
+        // Arrange
+        var newCategory = new Category { Name = "Transport", Icon = "🚗", IsDefault = true };
+        _context.Categories.Add(newCategory);
+        await _context.SaveChangesAsync();
+
+        var created = await _expenseService.CreateAsync(_userId, new CreateExpenseRequest
+        {
+            CategoryId = _categoryId,
+            Amount = 10m,
+            ExpenseDate = DateTime.UtcNow
+        });
+        created.CategoryName.Should().Be("Food");
+
+        var updateRequest = new UpdateExpenseRequest
+        {
+            CategoryId = newCategory.Id,
+            Amount = 10m,
+            ExpenseDate = DateTime.UtcNow
+        };
+
+        // Act
+        var result = await _expenseService.UpdateAsync(_userId, created.Id, updateRequest);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.CategoryId.Should().Be(newCategory.Id);
+        result.CategoryName.Should().Be("Transport");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_AllFields_UpdatesEverything()
+    {
+        // Arrange
+        var created = await _expenseService.CreateAsync(_userId, new CreateExpenseRequest
+        {
+            CategoryId = _categoryId,
+            Amount = 10m,
+            Description = "Old desc",
+            Merchant = "Old merchant",
+            ExpenseDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+        });
+
+        var updateRequest = new UpdateExpenseRequest
+        {
+            CategoryId = _categoryId,
+            Amount = 99.99m,
+            Description = "New desc",
+            Merchant = "New merchant",
+            ExpenseDate = new DateTime(2026, 6, 15, 0, 0, 0, DateTimeKind.Utc)
+        };
+
+        // Act
+        var result = await _expenseService.UpdateAsync(_userId, created.Id, updateRequest);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Amount.Should().Be(99.99m);
+        result.Description.Should().Be("New desc");
+        result.Merchant.Should().Be("New merchant");
+        result.ExpenseDate.Should().Be(new DateTime(2026, 6, 15, 0, 0, 0, DateTimeKind.Utc));
+    }
+
     #endregion
 
     #region DeleteAsync Tests
@@ -408,6 +651,122 @@ public class ExpenseServiceTests : IDisposable
 
         // Assert
         result.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task DeleteAsync_RemovesFromDatabase()
+    {
+        // Arrange
+        var created = await _expenseService.CreateAsync(_userId, new CreateExpenseRequest
+        {
+            CategoryId = _categoryId,
+            Amount = 10m,
+            ExpenseDate = DateTime.UtcNow
+        });
+
+        // Act
+        await _expenseService.DeleteAsync(_userId, created.Id);
+
+        // Assert
+        var expense = await _context.Expenses.FindAsync(created.Id);
+        expense.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task DeleteAsync_OtherUsersExpense_DoesNotDeleteExpense()
+    {
+        // Arrange
+        var created = await _expenseService.CreateAsync(_userId, new CreateExpenseRequest
+        {
+            CategoryId = _categoryId,
+            Amount = 10m,
+            ExpenseDate = DateTime.UtcNow
+        });
+
+        // Act
+        await _expenseService.DeleteAsync(_userId + 100, created.Id);
+
+        // Assert - expense should still exist
+        var expense = await _context.Expenses.FindAsync(created.Id);
+        expense.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task DeleteAsync_DoesNotAffectOtherExpenses()
+    {
+        // Arrange
+        var expense1 = await _expenseService.CreateAsync(_userId, new CreateExpenseRequest
+        {
+            CategoryId = _categoryId,
+            Amount = 10m,
+            ExpenseDate = DateTime.UtcNow
+        });
+        var expense2 = await _expenseService.CreateAsync(_userId, new CreateExpenseRequest
+        {
+            CategoryId = _categoryId,
+            Amount = 20m,
+            ExpenseDate = DateTime.UtcNow
+        });
+
+        // Act
+        await _expenseService.DeleteAsync(_userId, expense1.Id);
+
+        // Assert
+        var remaining = (await _expenseService.GetAllAsync(_userId)).ToList();
+        remaining.Should().HaveCount(1);
+        remaining[0].Id.Should().Be(expense2.Id);
+    }
+
+    #endregion
+
+    #region GetByIdAsync Edge Cases
+
+    [Fact]
+    public async Task GetByIdAsync_AfterUpdate_ReturnsUpdatedValues()
+    {
+        // Arrange
+        var created = await _expenseService.CreateAsync(_userId, new CreateExpenseRequest
+        {
+            CategoryId = _categoryId,
+            Amount = 10m,
+            Description = "Original",
+            ExpenseDate = DateTime.UtcNow
+        });
+
+        await _expenseService.UpdateAsync(_userId, created.Id, new UpdateExpenseRequest
+        {
+            CategoryId = _categoryId,
+            Amount = 50m,
+            Description = "Updated",
+            ExpenseDate = DateTime.UtcNow
+        });
+
+        // Act
+        var result = await _expenseService.GetByIdAsync(_userId, created.Id);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Amount.Should().Be(50m);
+        result.Description.Should().Be("Updated");
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_AfterDelete_ReturnsNull()
+    {
+        // Arrange
+        var created = await _expenseService.CreateAsync(_userId, new CreateExpenseRequest
+        {
+            CategoryId = _categoryId,
+            Amount = 10m,
+            ExpenseDate = DateTime.UtcNow
+        });
+        await _expenseService.DeleteAsync(_userId, created.Id);
+
+        // Act
+        var result = await _expenseService.GetByIdAsync(_userId, created.Id);
+
+        // Assert
+        result.Should().BeNull();
     }
 
     #endregion
