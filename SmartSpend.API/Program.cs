@@ -2,6 +2,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using SmartSpend.Core.Interfaces;
 using SmartSpend.Core.Settings;
@@ -43,11 +44,20 @@ builder.Services.AddAuthentication(options =>
 // Configure API Key Settings
 builder.Services.Configure<ApiKeySettings>(builder.Configuration.GetSection("ApiKeySettings"));
 
+// Configure OpenAI Settings
+builder.Services.Configure<OpenAISettings>(builder.Configuration.GetSection("OpenAISettings"));
+
 // Register services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IExpenseService, ExpenseService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
-builder.Services.AddScoped<IExpenseParsingService, ExpenseParsingService>();
+builder.Services.AddScoped<IExpenseParsingService>(sp =>
+    new ExpenseParsingService(
+        sp.GetRequiredService<AppDbContext>(),
+        sp.GetRequiredService<IOptions<OpenAISettings>>(),
+        sp.GetRequiredService<ILogger<ExpenseParsingService>>(),
+        null));
+
 builder.Services.AddScoped<IExpenseSummaryService, ExpenseSummaryService>();
 builder.Services.AddScoped<IInsightService, InsightService>();
 

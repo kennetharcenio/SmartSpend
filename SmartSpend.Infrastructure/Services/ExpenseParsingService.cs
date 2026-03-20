@@ -1,8 +1,13 @@
 using System.Globalization;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using OpenAI.Chat;
 using SmartSpend.Core.DTOs.Webhooks;
 using SmartSpend.Core.Interfaces;
+using SmartSpend.Core.Settings;
 using SmartSpend.Infrastructure.Data;
 
 namespace SmartSpend.Infrastructure.Services;
@@ -10,6 +15,9 @@ namespace SmartSpend.Infrastructure.Services;
 public class ExpenseParsingService : IExpenseParsingService
 {
     private readonly AppDbContext _context;
+    private readonly OpenAISettings _openAISettings;
+    private readonly ILogger<ExpenseParsingService> _logger;
+    private readonly ChatClient? _chatClient;
 
     private static readonly Dictionary<string, string[]> CategoryKeywords = new()
     {
@@ -20,8 +28,20 @@ public class ExpenseParsingService : IExpenseParsingService
     };
 
     public ExpenseParsingService(AppDbContext context)
+        : this(context, Options.Create(new OpenAISettings()), null, null)
+    {
+    }
+
+    public ExpenseParsingService(
+        AppDbContext context,
+        IOptions<OpenAISettings> openAISettings,
+        ILogger<ExpenseParsingService>? logger,
+        ChatClient? chatClient)
     {
         _context = context;
+        _openAISettings = openAISettings.Value;
+        _logger = logger!;
+        _chatClient = chatClient;
     }
 
     public async Task<ParseExpenseResponse> ParseExpenseAsync(ParseExpenseRequest request)
@@ -29,7 +49,105 @@ public class ExpenseParsingService : IExpenseParsingService
         if (string.IsNullOrWhiteSpace(request.RawText))
             throw new InvalidOperationException("RawText is required for expense parsing");
 
-        var text = request.RawText;
+        if (!string.IsNullOrWhiteSpace(_openAISettings.ApiKey))
+        {
+            try
+            {
+                return await ParseWithOpenAIAsync(request);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "OpenAI parsing failed, falling back to regex parsing");
+            }
+        }
+
+        return await ParseWithRegexAsync(request);
+    }
+
+    internal async Task<ParseExpenseResponse> ParseWithOpenAIAsync(ParseExpenseRequest request)
+    {
+        var client = _chatClient ?? new ChatClient(_openAISettings.Model, _openAISettings.ApiKey);
+        var prompt = BuildPrompt(request.RawText!);
+
+        var categories = await _context.Categories
+            .Where(c => c.IsDefault || c.UserId == request.UserId)
+            .Select(c => c.Name)
+            .ToListAsync();
+
+        var systemMessage = BuildSystemMessage(categories);
+
+        var messages = new List<ChatMessage>
+        {
+            new SystemChatMessage(systemMessage),
+            new UserChatMessage(prompt)
+        };
+
+        var options = new ChatCompletionOptions
+        {
+            ResponseFormat = ChatResponseFormat.CreateJsonObjectFormat()
+        };
+
+        var completion = await client.CompleteChatAsync(messages, options);
+        var responseJson = completion.Value.Content[0].Text;
+
+        return ParseOpenAIResponse(responseJson, request.RawText!);
+    }
+
+    internal static string BuildSystemMessage(List<string> categories)
+    {
+        var categoryList = string.Join(", ", categories);
+        return $$"""
+            You are an expense parsing assistant. Extract expense information from natural language text.
+
+            Available categories: {{categoryList}}
+            If the expense doesn't match any category, use "Other".
+
+            Respond ONLY with a JSON object in this exact format:
+            {
+                "amount": <decimal number>,
+                "merchant": "<merchant name or empty string>",
+                "categoryName": "<one of the available categories>",
+                "expenseDate": "<ISO 8601 date string, e.g. 2026-03-15>",
+                "description": "<brief description of the expense>"
+            }
+
+            Rules:
+            - amount must be a positive decimal number
+            - If no date is mentioned, use today's date: {{DateTime.UtcNow:yyyy-MM-dd}}
+            - If no merchant is identifiable, use an empty string
+            - description should be a clean summary of the expense
+            """;
+    }
+
+    internal static string BuildPrompt(string rawText)
+    {
+        return $"Parse this expense: \"{rawText}\"";
+    }
+
+    internal static ParseExpenseResponse ParseOpenAIResponse(string json, string rawText)
+    {
+        var options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        };
+
+        var parsed = JsonSerializer.Deserialize<OpenAIExpenseResult>(json, options)
+            ?? throw new InvalidOperationException("Failed to parse OpenAI response");
+
+        return new ParseExpenseResponse
+        {
+            Amount = parsed.Amount,
+            Merchant = parsed.Merchant ?? string.Empty,
+            CategoryName = parsed.CategoryName ?? "Other",
+            ExpenseDate = parsed.ExpenseDate == default ? DateTime.UtcNow.Date : parsed.ExpenseDate,
+            Description = parsed.Description ?? rawText,
+            Confidence = 0.95
+        };
+    }
+
+    private async Task<ParseExpenseResponse> ParseWithRegexAsync(ParseExpenseRequest request)
+    {
+        var text = request.RawText!;
         var amount = ExtractAmount(text);
         var merchant = ExtractMerchant(text);
         var date = ExtractDate(text);
@@ -131,5 +249,14 @@ public class ExpenseParsingService : IExpenseParsingService
         else confidence += 0.1; // Still some confidence even with default date
 
         return Math.Min(confidence, 1.0);
+    }
+
+    internal class OpenAIExpenseResult
+    {
+        public decimal Amount { get; set; }
+        public string? Merchant { get; set; }
+        public string? CategoryName { get; set; }
+        public DateTime ExpenseDate { get; set; }
+        public string? Description { get; set; }
     }
 }
